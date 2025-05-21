@@ -45,7 +45,7 @@ constexpr char WIFI_PASSWORD[] = "thingsboard";
 
 // Module actionneur Thingsboard token access
 // Doit être modifié suivant binome
-constexpr char TOKEN[] = "1voazulw2mqr9avkdonw";
+constexpr char TOKEN[] = "TOKACTimt03";
 
 // Thingsboard server IP address
 constexpr char THINGSBOARD_SERVER[] = "10.42.0.1";

@@ -187,7 +187,9 @@ void loop()
 		Serial.println("Sending device type attribute...");
 		tb.sendAttributeData(VERSION_KEY, VERSION);
 		tb.sendAttributeData(LIGHT_RELAY_KEY, LIGHT_STATUS);
-		// NEED TO COMPLETED
+		tb.sendAttributeData(VMC_RELAY_KEY, VMC_STATUS);
+		tb.sendAttributeData(HEATER_RELAY_KEY, HEATER_STATUS);
+		tb.sendAttributeData(AC_RELAY_KEY, AC_STATUS);
 		init_att_published = true;
 	}
 
@@ -198,8 +200,14 @@ void loop()
 		Serial.println("Subscribing for RPC...");
 		const RPC_Callback callbacks[MAX_RPC_SUBSCRIPTIONS] = {
 			{ RPC_SET_LIGHT_SWITCH_METHOD, processSwitchLightChange },
-			{ RPC_SET_VMC_SWITCH_METHOD, processSwitchVmcChange }
+			{ RPC_SET_VMC_SWITCH_METHOD, processSwitchVmcChange },
 			// NEED TO BE COMPLETED
+			{ RPC_SET_HEATER_SWITCH_METHOD, processSwitchHeaterChange },
+			{ RPC_SET_AC_SWITCH_METHOD, processSwitchACChange },
+			{ RPC_GET_LIGHT_SWITCH_METHOD, getSwitchLight },
+			{ RPC_GET_VMC_SWITCH_METHOD, getSwitchVmc },
+			{ RPC_GET_HEATER_SWITCH_METHOD, getSwitchHeater },
+			{ RPC_GET_AC_SWITCH_METHOD, getSwitchAC }
 		};
 
 		if (!server_rpc.RPC_Subscribe(callbacks + 0U, callbacks + MAX_RPC_SUBSCRIPTIONS))
@@ -304,6 +312,35 @@ void getSwitchLight(const JsonVariantConst& data, JsonDocument& response)
 		innerDoc = false;
 	}
 	response[LIGHT_RELAY_KEY] = innerDoc;
+}
+
+/// @brief Process heater change RPC
+void processSwitchHeaterChange(const JsonVariantConst& data, JsonDocument& response)
+{
+	bool rcvSwitchStatus;
+
+#if SERIAL_DEBUG
+	Serial.println("Received the set heater switch method");
+#endif
+
+	const int switch_state = data["enabled"];
+
+	if (switch_state == 0)
+	{
+		rcvSwitchStatus = false;
+	}
+	if (switch_state == 1)
+	{
+		rcvSwitchStatus = true;
+	}
+
+#if SERIAL_DEBUG
+	Serial.print("Heater switch received state: ");
+	Serial.println(switch_state);
+#endif
+
+	response.set(rcvSwitchStatus);
+	setHeater(rcvSwitchStatus);
 }
 
 /// @brief Set heater pin value and publish it to Thingsboard server
@@ -413,5 +450,124 @@ bool setLight(bool status)
 		}
 	}
 	tb.sendAttributeData(LIGHT_RELAY_KEY, LIGHT_STATUS);
+	return status;
+}
+
+/// @brief Process AC change RPC
+void processSwitchACChange(const JsonVariantConst& data, JsonDocument& response)
+{
+	bool rcvSwitchStatus;
+
+#if SERIAL_DEBUG
+	Serial.println("Received the set AC switch method");
+#endif
+
+	const int switch_state = data["enabled"];
+
+	if (switch_state == 0)
+	{
+		rcvSwitchStatus = false;
+	}
+	if (switch_state == 1)
+	{
+		rcvSwitchStatus = true;
+	}
+
+#if SERIAL_DEBUG
+	Serial.print("AC switch received state: ");
+	Serial.println(switch_state);
+#endif
+
+	response.set(rcvSwitchStatus);
+	setAC(rcvSwitchStatus);
+}
+
+/// @brief Process VMC status inquiry RPC
+void getSwitchVmc(const JsonVariantConst& data, JsonDocument& response)
+{
+#if SERIAL_DEBUG
+	Serial.println("Received the get VMC switch method");
+#endif
+
+	// Size of the response document needs to be configured to the size of the innerDoc + 1.
+	StaticJsonDocument<16>					doc;
+	StaticJsonDocument<JSON_OBJECT_SIZE(1)> innerDoc;
+	if (VMC_STATUS)
+	{
+		innerDoc = true;
+	}
+	else
+	{
+		innerDoc = false;
+	}
+	response[VMC_RELAY_KEY] = innerDoc;
+}
+
+/// @brief Process heater status inquiry RPC
+void getSwitchHeater(const JsonVariantConst& data, JsonDocument& response)
+{
+#if SERIAL_DEBUG
+	Serial.println("Received the get heater switch method");
+#endif
+
+	// Size of the response document needs to be configured to the size of the innerDoc + 1.
+	StaticJsonDocument<16>					doc;
+	StaticJsonDocument<JSON_OBJECT_SIZE(1)> innerDoc;
+	if (HEATER_STATUS)
+	{
+		innerDoc = true;
+	}
+	else
+	{
+		innerDoc = false;
+	}
+	response[HEATER_RELAY_KEY] = innerDoc;
+}
+
+/// @brief Process AC status inquiry RPC
+void getSwitchAC(const JsonVariantConst& data, JsonDocument& response)
+{
+#if SERIAL_DEBUG
+	Serial.println("Received the get AC switch method");
+#endif
+
+	// Size of the response document needs to be configured to the size of the innerDoc + 1.
+	StaticJsonDocument<16>					doc;
+	StaticJsonDocument<JSON_OBJECT_SIZE(1)> innerDoc;
+	if (AC_STATUS)
+	{
+		innerDoc = true;
+	}
+	else
+	{
+		innerDoc = false;
+	}
+	response[AC_RELAY_KEY] = innerDoc;
+}
+
+/// @brief Set AC pin value and publish it to Thingsboard server
+/// @return Returns true if pin is HIGH, false if LOW
+bool setAC(bool status)
+{
+#if SERIAL_DEBUG
+	Serial.printf("Changing AC status to : %s\n", status ? "true" : "false");
+#endif
+	digitalWrite(AC_PIN, status);
+	AC_STATUS = status;
+	if (!tb.connected())
+	{
+		// Reconnect to the ThingsBoard server,
+		// if a connection was disrupted or has not yet been established
+#if SERIAL_DEBUG
+		Serial.printf(CONNECTING_MSG, THINGSBOARD_SERVER, TOKEN);
+#endif
+		if (!tb.connect(THINGSBOARD_SERVER, TOKEN, THINGSBOARD_PORT))
+		{
+#if SERIAL_DEBUG
+			Serial.println("Failed to connect");
+#endif
+		}
+	}
+	tb.sendAttributeData(AC_RELAY_KEY, AC_STATUS);
 	return status;
 }
