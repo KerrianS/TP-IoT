@@ -332,3 +332,86 @@ bool setHeater(bool status)
 	tb.sendAttributeData(HEATER_RELAY_KEY, HEATER_STATUS);
 	return status;
 }
+
+/// @brief Set VMC pin value and publish it to Thingsboard server
+/// @return Returns true if pin is HIGH, false if LOW
+bool setVMC(bool status)
+{
+#if SERIAL_DEBUG
+	Serial.printf("Changing VMC status to : %s\n", status ? "true" : "false");
+#endif
+	digitalWrite(VMC_PIN, status);
+	VMC_STATUS = status;
+	if (!tb.connected())
+	{
+		// Reconnect to the ThingsBoard server,
+		// if a connection was disrupted or has not yet been established
+#if SERIAL_DEBUG
+		Serial.printf(CONNECTING_MSG, THINGSBOARD_SERVER, TOKEN);
+#endif
+		if (!tb.connect(THINGSBOARD_SERVER, TOKEN, THINGSBOARD_PORT))
+		{
+#if SERIAL_DEBUG
+			Serial.println("Failed to connect");
+#endif
+		}
+	}
+	tb.sendAttributeData(VMC_RELAY_KEY, VMC_STATUS);
+	return status;
+}
+
+/// @brief Process Light change RPC
+void processSwitchLightChange(const JsonVariantConst& data, JsonDocument& response)
+{
+	bool rcvSwitchStatus;
+
+#if SERIAL_DEBUG
+	Serial.println("Received the set light switch method");
+#endif
+
+	const int switch_state = data["enabled"];
+
+	if (switch_state == 0)
+	{
+		rcvSwitchStatus = false;
+	}
+	if (switch_state == 1)
+	{
+		rcvSwitchStatus = true;
+	}
+
+#if SERIAL_DEBUG
+	Serial.print("Light switch received state: ");
+	Serial.println(switch_state);
+#endif
+
+	response.set(rcvSwitchStatus);
+	setLight(rcvSwitchStatus);
+}
+
+/// @brief Set light pin value and publish it to Thingsboard server
+/// @return Returns true if pin is HIGH, false if LOW
+bool setLight(bool status)
+{
+#if SERIAL_DEBUG
+	Serial.printf("Changing light status to : %s\n", status ? "true" : "false");
+#endif
+	digitalWrite(LIGHT_PIN, status);
+	LIGHT_STATUS = status;
+	if (!tb.connected())
+	{
+		// Reconnect to the ThingsBoard server,
+		// if a connection was disrupted or has not yet been established
+#if SERIAL_DEBUG
+		Serial.printf(CONNECTING_MSG, THINGSBOARD_SERVER, TOKEN);
+#endif
+		if (!tb.connect(THINGSBOARD_SERVER, TOKEN, THINGSBOARD_PORT))
+		{
+#if SERIAL_DEBUG
+			Serial.println("Failed to connect");
+#endif
+		}
+	}
+	tb.sendAttributeData(LIGHT_RELAY_KEY, LIGHT_STATUS);
+	return status;
+}
