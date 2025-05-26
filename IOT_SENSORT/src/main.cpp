@@ -57,11 +57,11 @@ void InitWiFi();
 bool reconnect();
 
 // Définition des seuils d'alarme
-#define TEMP_HIGH 30.0
-#define TEMP_LOW 15.0
+#define TEMP_HIGH 20.0
+#define TEMP_LOW 0.0
 #define HUMIDITY_HIGH 70.0
 #define HUMIDITY_LOW 20.0
-#define VOC_HIGH 500
+#define VOC_HIGH 50
 #define LUX_LOW 50.0
 #define BATTERY_LOW 3.3
 
@@ -80,48 +80,49 @@ float last_lux = 0;
 float last_battery = 0;
 
 void checkAndSendAlarms(float temp, float humidity, uint16_t voc, float lux, float battery) {
-    // Vérification température
-    if (temp > TEMP_HIGH || temp < TEMP_LOW) {
+    // Alarme température haute
+    if (temp > TEMP_HIGH) {
         if (!temp_alarm) {
-            tb.sendTelemetryData("temp_alarm", true);
+            tb.sendTelemetryData("temp_alarm_high", true);
             temp_alarm = true;
-            Serial.printf("ALARME: Température hors limites: %.2f°C\n", temp);
+            Serial.printf("ALARME: Température > %.1f°C : %.2f°C\n", TEMP_HIGH, temp);
         }
-    } else if (temp_alarm) {
-        tb.sendTelemetryData("temp_alarm", false);
+    } else if (temp_alarm && temp <= TEMP_HIGH) {
+        tb.sendTelemetryData("temp_alarm_high", false);
         temp_alarm = false;
     }
 
-    // Vérification humidité
-    if (humidity > HUMIDITY_HIGH || humidity < HUMIDITY_LOW) {
-        if (!humidity_alarm) {
-            tb.sendTelemetryData("humidity_alarm", true);
-            humidity_alarm = true;
-            Serial.printf("ALARME: Humidité hors limites: %.2f%%\n", humidity);
+    // Alarme température basse
+    static bool temp_low_alarm = false;
+    if (temp < TEMP_LOW) {
+        if (!temp_low_alarm) {
+            tb.sendTelemetryData("temp_alarm_low", true);
+            temp_low_alarm = true;
+            Serial.printf("ALARME: Température < %.1f°C : %.2f°C\n", TEMP_LOW, temp);
         }
-    } else if (humidity_alarm) {
-        tb.sendTelemetryData("humidity_alarm", false);
-        humidity_alarm = false;
+    } else if (temp_low_alarm && temp >= TEMP_LOW) {
+        tb.sendTelemetryData("temp_alarm_low", false);
+        temp_low_alarm = false;
     }
 
-    // Vérification VOC
+    // Alarme VOC
     if (voc > VOC_HIGH) {
         if (!voc_alarm) {
             tb.sendTelemetryData("voc_alarm", true);
             voc_alarm = true;
-            Serial.printf("ALARME: VOC élevé: %d\n", voc);
+            Serial.printf("ALARME: VOC > %d : %d\n", VOC_HIGH, voc);
         }
-    } else if (voc_alarm) {
+    } else if (voc_alarm && voc < VOC_HIGH) {
         tb.sendTelemetryData("voc_alarm", false);
         voc_alarm = false;
     }
 
-    // Forcer l'alarme de luminosité pour test
-    tb.sendTelemetryData("lux_alarm", true);
-    Serial.println("ALARME TEST: Luminosité faible (forcée pour test)");
-    lux_alarm = true;
+    // Forcer l'alarme de luminosité pour test (à retirer si plus utile)
+    // tb.sendTelemetryData("lux_alarm", true);
+    // Serial.println("ALARME TEST: Luminosité faible (forcée pour test)");
+    // lux_alarm = true;
 
-    // Vérification batterie
+    // Vérification batterie (inchangé)
     if (battery < BATTERY_LOW) {
         if (!battery_alarm) {
             tb.sendTelemetryData("battery_alarm", true);
