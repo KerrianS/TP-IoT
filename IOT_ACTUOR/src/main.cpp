@@ -117,13 +117,12 @@ constexpr uint64_t REQUEST_TIMEOUT_MICROSECONDS = 5000U * 1000U;
 constexpr size_t MAX_ATTRIBUTES = 3U;
 
 // Initialize used apis
-Server_Side_RPC<MAX_RPC_SUBSCRIPTIONS, MAX_RPC_RESPONSE> server_rpc;
-const std::array<IAPI_Implementation*, 1U>				 apis
-	= { &server_rpc /*, &client_rpc , &shared_update */ };
+Server_Side_RPC server_rpc;
+const std::array<IAPI_Implementation*, 1U> apis = { &server_rpc };
 
 // Initialize ThingsBoard instance with the maximum needed buffer size
 ThingsBoard tb(
-	mqttClient, MAX_MESSAGE_RECEIVE_SIZE, MAX_MESSAGE_SEND_SIZE, Default_Max_Stack_Size, apis);
+	mqttClient, MAX_MESSAGE_RECEIVE_SIZE, MAX_MESSAGE_SEND_SIZE);
 
 // Statuses for subscribing to shared attributes
 bool RPC_subscribed = false;
@@ -133,11 +132,9 @@ bool init_att_published = false;
 
 void setup()
 {
-// Initalize serial connection for debugging
-#if SERIAL_DEBUG
-	Serial.begin(SERIAL_DEBUG_BAUD);
+	Serial.begin(115200);
 	delay(200);
-#endif
+	Serial.println("=== SETUP START ===");
 
 	// Set VMC, LIGHT, HEATER & AC pin mode as OUTPUT
 	pinMode(VMC_PIN, OUTPUT);
@@ -202,12 +199,10 @@ void loop()
 	if (!RPC_subscribed)
 	{
 		Serial.println("Requesting RPC....");
-
 		Serial.println("Subscribing for RPC...");
 		const RPC_Callback callbacks[MAX_RPC_SUBSCRIPTIONS] = {
 			{ RPC_SET_LIGHT_SWITCH_METHOD, processSwitchLightChange },
 			{ RPC_SET_VMC_SWITCH_METHOD, processSwitchVmcChange },
-			// NEED TO BE COMPLETED
 			{ RPC_SET_HEATER_SWITCH_METHOD, processSwitchHeaterChange },
 			{ RPC_SET_AC_SWITCH_METHOD, processSwitchACChange },
 			{ RPC_GET_LIGHT_SWITCH_METHOD, getSwitchLight },
@@ -273,28 +268,10 @@ bool reconnect()
 /// @brief Process VMC change RPC
 void processSwitchVmcChange(const JsonVariantConst& data, JsonDocument& response)
 {
+	Serial.println(">>> processSwitchVmcChange called!");
 	bool rcvSwitchStatus;
-
-#if SERIAL_DEBUG
-	Serial.println("Received the set vmc switch method");
-#endif
-
 	const int switch_state = data["enabled"];
-
-	if (switch_state == 0)
-	{
-		rcvSwitchStatus = false;
-	}
-	if (switch_state == 1)
-	{
-		rcvSwitchStatus = true;
-	}
-
-#if SERIAL_DEBUG
-	Serial.print("VMC switch received state: ");
-	Serial.println(switch_state);
-#endif
-
+	rcvSwitchStatus = (switch_state == 1);
 	response.set(rcvSwitchStatus);
 	setVMC(rcvSwitchStatus);
 }
@@ -406,28 +383,10 @@ bool setVMC(bool status)
 /// @brief Process Light change RPC
 void processSwitchLightChange(const JsonVariantConst& data, JsonDocument& response)
 {
+	Serial.println(">>> processSwitchLightChange called!");
 	bool rcvSwitchStatus;
-
-#if SERIAL_DEBUG
-	Serial.println("Received the set light switch method");
-#endif
-
 	const int switch_state = data["enabled"];
-
-	if (switch_state == 0)
-	{
-		rcvSwitchStatus = false;
-	}
-	if (switch_state == 1)
-	{
-		rcvSwitchStatus = true;
-	}
-
-#if SERIAL_DEBUG
-	Serial.print("Light switch received state: ");
-	Serial.println(switch_state);
-#endif
-
+	rcvSwitchStatus = (switch_state == 1);
 	response.set(rcvSwitchStatus);
 	setLight(rcvSwitchStatus);
 }

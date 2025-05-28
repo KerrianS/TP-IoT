@@ -1,4 +1,43 @@
-#include <Arduino.h>
+// AHT20 SENSOR ENABLE / DISABLE
+#include <cstdint>
+#define AHT20_ENABLE true
+
+// SGP40 SENSOR ENABLE / DISABLE
+#define SGP40_ENABLE true
+
+// BH1750 SENSOR ENABLE / DISABLE
+#define BH1750_ENABLE true
+
+// BATTERY TESTING ENABLE / DISABLE
+#define BAT_TEST_ENABLE true
+
+// Thingsboard library debug
+#define THINGSBOARD_ENABLE_DEBUG true
+
+// Serial debug output
+#define SERIAL_DEBUG true
+#if SERIAL_DEBUG
+#define SERIAL_PRINT_SENSOR_VALUES false
+#endif
+
+constexpr char WIFI_SSID[]	   = "thingsboard";
+constexpr char WIFI_PASSWORD[] = "thingsboard";
+
+// See https://thingsboard.io/docs/getting-started-guides/helloworld/
+// to understand how to obtain an access token
+constexpr char TOKEN[] = "TOKACTimt03";
+// constexpr char mqtt_attribute_topic[] = "v1/devices/me/attributes";
+
+// Thingsboard we want to establish a connection too
+constexpr char THINGSBOARD_SERVER[] = "10.42.0.2";
+
+// MQTT port used to communicate with the server, 1883 is the default unencrypted MQTT port,
+// whereas 8883 would be the default encrypted SSL MQTT port
+#if ENCRYPTED
+constexpr uint16_t THINGSBOARD_PORT = 8883U;
+#else
+constexpr uint16_t THINGSBOARD_PORT = 1883U;
+#endif
 
 // Whether the given script is using encryption or not,
 // generally recommended as it increases security (communication with the server is not in clear
@@ -10,10 +49,14 @@
 // we have to select PICO D4 and UNCOMMENT this line!
 #define ADAFRUIT_FEATHER_ESP32_V2
 
+// Sending data can either be done over MQTT and the PubSubClient
+// or HTTPS and the HTTPClient, when using the ESP32 or ESP8266
+#define USING_HTTPS false
+
 // Enables the ThingsBoard class to be fully dynamic instead of requiring template arguments to
 // statically allocate memory. If enabled the program might be slightly slower and all the memory
 // will be placed onto the heap instead of the stack.
-// #define THINGSBOARD_ENABLE_DYNAMIC 1
+#define THINGSBOARD_ENABLE_DYNAMIC 1
 
 // If the THINGSBOARD_ENABLE_DYNAMIC 1 setting causes this error log message to appear [TB] Unable
 // to de-serialize received json data with error (DeserializationError::NoMemory). Simply add this
@@ -25,38 +68,6 @@
 // Requires an additional library, see https://github.com/bblanchon/ArduinoStreamUtils for more
 // information. Simply install that library and the feature will be enabled automatically.
 #define THINGSBOARD_ENABLE_STREAM_UTILS 0
-
-// Baud rate for the debugging serial connection
-// If the Serial output is mangled, ensure to change the monitor speed accordingly to this variable
-constexpr uint32_t SERIAL_DEBUG_BAUD = 115200U;
-
-// Enable Serial debug output
-#define SERIAL_DEBUG true
-
-// Enable MQTT RPC debug
-#define MQTT_RPC_DEBUG false
-
-// Enable Thingsboard library debug
-#define THINGSBOARD_ENABLE_DEBUG false
-
-// WIFI parameters
-constexpr char WIFI_SSID[]	   = "thingsboard5G";
-constexpr char WIFI_PASSWORD[] = "thingsboard";
-
-// Module actionneur Thingsboard token access
-// Doit être modifié suivant binome
-constexpr char TOKEN[] = "TOKACTimt03";
-
-// Thingsboard server IP address
-constexpr char THINGSBOARD_SERVER[] = "imtthingsboard.local";
-
-// MQTT port used to communicate with the server, 1883 is the default unencrypted MQTT port,
-// whereas 8883 would be the default encrypted SSL MQTT port
-#if ENCRYPTED
-constexpr uint16_t THINGSBOARD_PORT = 8883U;
-#else
-constexpr uint16_t THINGSBOARD_PORT = 8080;
-#endif
 
 #if ENCRYPTED
 // See https://comodosslstore.com/resources/what-is-a-root-ca-certificate-and-how-do-i-download-it/
